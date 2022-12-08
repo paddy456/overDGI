@@ -18,12 +18,14 @@ warnings.filterwarnings("ignore")
 
 
 
-from _nocd.utils import load_dataset
+from nocd_utils import load_dataset
 
-# channels = 16
+
+
+
 community_pred_threshold = 0.3
-# loader = load_dataset("../_nocd/data/facebook_ego/fb_0.npz")
-loader = load_dataset("data/mag_eng.npz")
+file_name = "data/fb_0.npz"
+loader = load_dataset(file_name)
 
 A, X, Z_gt = loader['A'], loader['X'], loader['Z']
 num_communities = Z_gt.shape[1]
@@ -79,10 +81,16 @@ else:
 parser = argparse.ArgumentParser()
 parser.add_argument('--lr', type=float, default=0.001,
                     help='learning rate.')
-parser.add_argument('--hidden', type=int, default=256,
+parser.add_argument('--hidden', type=int, default=128,
                     help='Number of hidden units.')
+parser.add_argument('--dataset', type=str, default='Cora',
+                    help='which network to load')
+parser.add_argument('--K', type=int, default=7,
+                    help='How many partitions')
 parser.add_argument('--clustertemp', type=float, default=30,
                     help='how hard to make the softmax for the cluster assignments')
+parser.add_argument('--train_iters', type=int, default=100571,
+                    help='number of training iterations')
 parser.add_argument('--num_cluster_iter', type=int, default=1,
                     help='number of iterations for clustering')
 parser.add_argument('--seed', type=int, default=24, help='Random seed.')
@@ -96,9 +104,7 @@ if args.cuda:
     torch.cuda.manual_seed(args.seed)
 
 device = torch.device('cpu')
-# data = data.to(device)
-# adj_all = torch.from_numpy(make_adj(data.edge_index.numpy(), data.num_nodes)).float()
-# test_object = make_modularity_matrix(adj_all)
+
 
 hidden_size = args.hidden
 model = DeepGraphInfomax(
@@ -133,6 +139,8 @@ def train():
 
 maxf1 = 0
 maxja = 0
+
+pre_comm_scores_weighted_thresholded = None
 
 for epoch in range(500):
     loss = train()
